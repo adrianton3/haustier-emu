@@ -8,9 +8,9 @@
 
 
 
-std::variant<std::vector<uint8_t>, std::string> assemble (std::string);
+std::variant<std::vector<Token>, std::string> tokenize (const std::string&);
 
-std::variant<std::vector<Token>, std::string> tokenize (std::string);
+std::variant<std::vector<uint8_t>, std::string> assemble (const std::string&);
 
 
 

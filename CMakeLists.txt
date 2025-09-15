@@ -27,6 +27,7 @@ set(PROJECT_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/src/") # Define PROJECT_INCLUDE t
 add_executable(${PROJECT_NAME}
         src/asm.cpp
         src/asm.h
+        src/opcodes.h
         src/Token.cpp
         src/Token.h)
 target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCES})

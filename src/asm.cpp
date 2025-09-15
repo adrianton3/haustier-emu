@@ -4,6 +4,11 @@
 
 #include "asm.h"
 
+#include <optional>
+#include <strings.h>
+
+#include "opcodes.h"
+
 
 enum class InsType : uint8_t {
     ADC,
@@ -153,7 +158,7 @@ struct ChopResult {
     int index;
 };
 
-std::variant<ChopResult, std::string> chopIdentifier (std::string& source, int indexStart) {
+std::variant<ChopResult, std::string> chopIdentifier (const std::string& source, int indexStart) {
     auto index = indexStart;
 
     while (true) {
@@ -168,15 +173,15 @@ std::variant<ChopResult, std::string> chopIdentifier (std::string& source, int i
     }
 }
 
-std::variant<ChopResult, std::string> chopNumberHex (std::string& source, int indexStart) {
+std::variant<ChopResult, std::string> chopNumberHex (const std::string& source, int indexStart) {
     return { "can't chop numbers yet" };
 }
 
-std::variant<ChopResult, std::string> chopNumberDec (std::string& source, int indexStart) {
+std::variant<ChopResult, std::string> chopNumberDec (const std::string& source, int indexStart) {
     return { "can't chop numbers yet" };
 }
 
-int ignoreComment (std::string& source, int indexStart) {
+int ignoreComment (const std::string& source, int indexStart) {
     auto index = indexStart;
 
     while (true) {
@@ -188,7 +193,7 @@ int ignoreComment (std::string& source, int indexStart) {
     }
 }
 
-std::variant<std::vector<Token>, std::string> tokenize (std::string source) {
+std::variant<std::vector<Token>, std::string> tokenize (const std::string& source) {
     std::vector<Token> tokens;
     auto index = 0;
 
@@ -254,6 +259,7 @@ std::variant<std::vector<Token>, std::string> tokenize (std::string source) {
         }
 
         if (source[index] == '\n') {
+            tokens.emplace_back(NewLine {});
             index++;
             continue;
         }
@@ -264,6 +270,7 @@ std::variant<std::vector<Token>, std::string> tokenize (std::string source) {
         }
 
         if (source[index] == ';') {
+            tokens.emplace_back(NewLine {});
             index = ignoreComment(source, index);
             continue;
         }
@@ -274,6 +281,39 @@ std::variant<std::vector<Token>, std::string> tokenize (std::string source) {
     return tokens;
 }
 
+std::string getIdentifierName (const Token& identifier) {
+    return std::get<Identifier>(identifier).name;
+}
+
+int64_t getNumberValue (const Token& number) {
+    return std::get<Number>(number).value;
+}
+
+template <int Offset>
+bool matchesUnsafe (const std::vector<Token>& tokens, size_t index) {
+    return true;
+}
+
+template <int Offset, TokenType Head, TokenType ...Tail>
+bool matchesUnsafe (const std::vector<Token>& tokens, size_t index) {
+    return tokens[index + Offset].index() == static_cast<size_t>(Head) && matchesUnsafe<Offset + 1, Tail...>(tokens, index);
+}
+
+template <TokenType ...Types>
+bool matchesUnsafe (const std::vector<Token>& tokens, size_t index) {
+    return matchesUnsafe<0, Types...>(tokens, index);
+}
+
+template <TokenType ...Types>
+bool matches (const std::vector<Token>& tokens, size_t index) {
+    return index + sizeof...(Types) <= tokens.size() && matchesUnsafe<0, Types...>(tokens, index);
+}
+
+struct Link {
+    uint16_t offset;
+    std::string name;
+};
+
 std::variant<std::vector<uint8_t>, std::string> assemble (const std::string& source) {
     const auto tokensOrError = tokenize(source);
 
@@ -281,9 +321,47 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::string& sou
         return *error;
     }
 
-    // tokenize
-    // traverse and generate code; keep jump targets around
-    // link back to jump targets; error on unreachable labels; warn on unused labels
+    auto tokens = std::get<std::vector<Token>> (tokensOrError);
+    tokens.emplace_back(NewLine {});
 
-    return {};
+    std::vector<uint8_t> bytes;
+    std::unordered_map<std::string, uint64_t> labels;
+    std::vector<Link> links;
+
+    auto index = 0;
+    while (index < tokens.size()) {
+        if (matches<TokenType::NewLine>(tokens, index)) {
+            index++;
+            continue;
+        }
+
+        if (matches<TokenType::Identifier, TokenType::Colon, TokenType::NewLine>(tokens, index)) {
+            const auto& name = getIdentifierName(tokens[index]);
+            labels[name] = bytes.size();
+            index += 3;
+            continue;
+        }
+
+        if (matches<TokenType::Identifier>(tokens, index)) {
+            const auto& name = getIdentifierName(tokens[index]);
+            index++;
+
+            if (matches<TokenType::NewLine>(tokens, index)) {
+                // implied
+                const InsAndMode insAndMode { name, AddressingMode::Implied };
+
+                if (!opcodes.contains(insAndMode)) {
+                    return "not cool";
+                }
+
+                bytes.push_back(opcodes[insAndMode]);
+                index++;
+                continue;
+            }
+        }
+
+        return "not cool";
+    }
+
+    return bytes;
 }

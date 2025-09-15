@@ -9,6 +9,7 @@ struct TokenStringifier {
     std::string operator() (const ParOpen&) const { return { '(' }; }
     std::string operator() (const ParClosed&) const { return { ')' }; }
     std::string operator() (const Comma&) const { return { ',' }; }
+    std::string operator() (const NewLine&) const { return { "NL" }; }
 };
 
 std::string stringify(const Token& token) {

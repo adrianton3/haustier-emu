@@ -45,6 +45,22 @@ void tokenizeDebug (const std::string& source) {
     }
 }
 
+void assemblerDebug (const std::string& source) {
+    const auto bytesOrError = assemble(source);
+
+    if (const auto* bytes = std::get_if<std::vector<uint8_t>>(&bytesOrError)) {
+        for (const auto byte : *bytes) {
+            printf("0x%02x ", byte);
+        }
+
+        printf("\n");
+    } else {
+        const auto error = std::get<std::string>(bytesOrError);
+
+        printf("error: %s\n", error.c_str());
+    }
+}
+
 void printUsage (char* path) {
     fprintf(
         stderr,
@@ -82,7 +98,10 @@ int main (int argc, char* argv[]) {
         }
 
         if (strcmp(argv[1], "compile") == 0) {
-            // not yet!
+            std::ifstream file { argv[2] };
+            const std::string source { std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>() };
+            assemblerDebug(source);
+            return 0;
         }
     }
 
