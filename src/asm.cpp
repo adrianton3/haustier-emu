@@ -358,6 +358,21 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::string& sou
                 index++;
                 continue;
             }
+
+            if (matches<TokenType::Identifier, TokenType::NewLine>(tokens, index)) {
+                if (getIdentifierName(tokens[index]) == "A") {
+                    // accumulator
+                    const InsAndMode insAndMode { name, AddressingMode::Accumulator };
+
+                    if (!opcodes.contains(insAndMode)) {
+                        return "not cool";
+                    }
+
+                    bytes.push_back(opcodes[insAndMode]);
+                    index += 2;
+                    continue;
+                }
+            }
         }
 
         return "not cool";
