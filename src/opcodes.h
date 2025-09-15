@@ -11,6 +11,7 @@
 enum class AddressingMode : uint8_t {
     Implied,
     Accumulator,
+    Relative,
 };
 
 struct InsAndMode {
@@ -29,7 +30,15 @@ struct std::hash<InsAndMode> {
 
 static std::unordered_map<InsAndMode, uint8_t> opcodes {
     { { "ASL", AddressingMode::Accumulator }, 0x0A },
+    { { "BCC", AddressingMode::Relative }, 0x90 },
+    { { "BCS", AddressingMode::Relative }, 0xB0 },
+    { { "BEQ", AddressingMode::Relative }, 0xF0 },
+    { { "BMI", AddressingMode::Relative }, 0x30 },
+    { { "BNE", AddressingMode::Relative }, 0xD0 },
+    { { "BPL", AddressingMode::Relative }, 0x10 },
     { { "BRK", AddressingMode::Implied }, 0x00 },
+    { { "BVC", AddressingMode::Relative }, 0x50 },
+    { { "BVS", AddressingMode::Relative }, 0x70 },
     { { "CLC", AddressingMode::Implied }, 0x18 },
     { { "CLD", AddressingMode::Implied }, 0xD8 },
     { { "CLI", AddressingMode::Implied }, 0x58 },

@@ -2,131 +2,11 @@
 #include <unordered_map>
 #include <variant>
 
-#include "asm.h"
-
-#include <optional>
-#include <strings.h>
-
 #include "opcodes.h"
 
+#include "asm.h"
 
-enum class InsType : uint8_t {
-    ADC,
-    AND,
-    ASL,
-    BCC,
-    BCS,
-    BEQ,
-    BIT,
-    BMI,
-    BNE,
-    BPL,
-    BRK,
-    BVC,
-    BVS,
-    CLC,
-    CLD,
-    CLI,
-    CLV,
-    CMP,
-    CPX,
-    CPY,
-    DEC,
-    DEX,
-    DEY,
-    EOR,
-    INC,
-    INX,
-    INY,
-    JMP,
-    JSR,
-    LDA,
-    LDX,
-    LDY,
-    LSR,
-    NOP,
-    ORA,
-    PHA,
-    PHP,
-    PLA,
-    PLP,
-    ROL,
-    ROR,
-    RTI,
-    RTS,
-    SBC,
-    SEC,
-    SED,
-    SEI,
-    STA,
-    STX,
-    STY,
-    TAX,
-    TAY,
-    TSX,
-    TXA,
-    TXS,
-    TYA,
-};
 
-std::unordered_map<std::string, InsType> stringInsTypeMap {
-    { "ADC", InsType::ADC },
-    { "AND", InsType::AND },
-    { "ASL", InsType::ASL },
-    { "BCC", InsType::BCC },
-    { "BCS", InsType::BCS },
-    { "BEQ", InsType::BEQ },
-    { "BIT", InsType::BIT },
-    { "BMI", InsType::BMI },
-    { "BNE", InsType::BNE },
-    { "BPL", InsType::BPL },
-    { "BRK", InsType::BRK },
-    { "BVC", InsType::BVC },
-    { "BVS", InsType::BVS },
-    { "CLC", InsType::CLC },
-    { "CLD", InsType::CLD },
-    { "CLI", InsType::CLI },
-    { "CLV", InsType::CLV },
-    { "CMP", InsType::CMP },
-    { "CPX", InsType::CPX },
-    { "CPY", InsType::CPY },
-    { "DEC", InsType::DEC },
-    { "DEX", InsType::DEX },
-    { "DEY", InsType::DEY },
-    { "EOR", InsType::EOR },
-    { "INC", InsType::INC },
-    { "INX", InsType::INX },
-    { "INY", InsType::INY },
-    { "JMP", InsType::JMP },
-    { "JSR", InsType::JSR },
-    { "LDA", InsType::LDA },
-    { "LDX", InsType::LDX },
-    { "LDY", InsType::LDY },
-    { "LSR", InsType::LSR },
-    { "NOP", InsType::NOP },
-    { "ORA", InsType::ORA },
-    { "PHA", InsType::PHA },
-    { "PHP", InsType::PHP },
-    { "PLA", InsType::PLA },
-    { "PLP", InsType::PLP },
-    { "ROL", InsType::ROL },
-    { "ROR", InsType::ROR },
-    { "RTI", InsType::RTI },
-    { "RTS", InsType::RTS },
-    { "SBC", InsType::SBC },
-    { "SEC", InsType::SEC },
-    { "SED", InsType::SED },
-    { "SEI", InsType::SEI },
-    { "STA", InsType::STA },
-    { "STX", InsType::STX },
-    { "STY", InsType::STY },
-    { "TAX", InsType::TAX },
-    { "TAY", InsType::TAY },
-    { "TSX", InsType::TSX },
-    { "TXA", InsType::TXA },
-    { "TXS", InsType::TXS },
-    { "TYA", InsType::TYA },
-};
 
 bool isIdentifierHeadChar (char ch) {
     return (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == '_';
@@ -325,7 +205,7 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::string& sou
     tokens.emplace_back(NewLine {});
 
     std::vector<uint8_t> bytes;
-    std::unordered_map<std::string, uint64_t> labels;
+    std::unordered_map<std::string, uint16_t> labels;
     std::vector<Link> links;
 
     auto index = 0;
@@ -369,13 +249,38 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::string& sou
                     }
 
                     bytes.push_back(opcodes[insAndMode]);
-                    index += 2;
-                    continue;
+                } else {
+                    // relative
+                    const InsAndMode insAndMode { name, AddressingMode::Relative };
+
+                    if (!opcodes.contains(insAndMode)) {
+                        return "not cool";
+                    }
+
+                    bytes.insert(bytes.end(), { opcodes[insAndMode], 0x00 });
+                    links.emplace_back(bytes.size() - 1, getIdentifierName(tokens[index]));
                 }
+
+                index += 2;
+                continue;
             }
         }
 
         return "not cool";
+    }
+
+    for (const auto& link : links) {
+        if (!labels.contains(link.name)) {
+            return "not cool";
+        }
+
+        const auto delta = static_cast<int64_t>(labels[link.name]) - static_cast<int64_t>(link.offset) - 1;
+
+        if (!std::in_range<int8_t>(delta)) {
+            return "not cool";
+        }
+
+        bytes[link.offset] = delta;
     }
 
     return bytes;
