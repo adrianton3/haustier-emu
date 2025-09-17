@@ -7,7 +7,8 @@
 
 #include "raylib.h"
 
-#include "asm.h"
+#include "assembler/tokenize.h"
+#include "assembler/asm.h"
 
 void run (const char* binaryFile) {
     InitWindow(640, 400, "haustier-emu");

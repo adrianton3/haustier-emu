@@ -25,11 +25,13 @@ set(PROJECT_INCLUDE "${CMAKE_CURRENT_LIST_DIR}/src/") # Define PROJECT_INCLUDE t
 
 # Declaring our executable
 add_executable(${PROJECT_NAME}
-        src/asm.cpp
-        src/asm.h
-        src/opcodes.h
-        src/Token.cpp
-        src/Token.h)
+        src/assembler/asm.cpp
+        src/assembler/asm.h
+        src/assembler/opcodes.h
+        src/assembler/Token.cpp
+        src/assembler/Token.h
+        src/assembler/tokenize.cpp
+        src/assembler/tokenize.h)
 target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_SOURCES})
 target_include_directories(${PROJECT_NAME} PRIVATE ${PROJECT_INCLUDE})
 target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
