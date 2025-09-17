@@ -208,7 +208,7 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::string& sou
                     return name + " is not available with indirect addressing";
                 }
 
-                const auto value = getNumberValue(tokens[index]);
+                const auto value = getNumberValue(tokens[index + 1]);
 
                 if (!std::in_range<uint16_t>(value)) {
                     return "number must be in the $0000..$FFFF range";
@@ -217,6 +217,50 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::string& sou
                 bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value), getByte<1>(value) });
 
                 index += 4;
+                continue;
+            }
+
+            if (
+                matches<TokenType::ParOpen, TokenType::Number, TokenType::Comma, TokenType::Identifier, TokenType::ParClosed, TokenType::NewLine>(tokens, index) &&
+                getIdentifierName(tokens[index + 3]) == "X"
+            ) {
+                const InsAndMode insAndMode { name, AddressingMode::IndirectX };
+
+                if (!opcodes.contains(insAndMode)) {
+                    return name + " is not available with indirect-x addressing";
+                }
+
+                const auto value = getNumberValue(tokens[index + 1]);
+
+                if (!std::in_range<uint8_t>(value)) {
+                    return "number must be in the $00..$FF range";
+                }
+
+                bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
+
+                index += 6;
+                continue;
+            }
+
+            if (
+                matches<TokenType::ParOpen, TokenType::Number, TokenType::ParClosed, TokenType::Comma, TokenType::Identifier, TokenType::NewLine>(tokens, index) &&
+                getIdentifierName(tokens[index + 4]) == "Y"
+            ) {
+                const InsAndMode insAndMode { name, AddressingMode::IndirectY };
+
+                if (!opcodes.contains(insAndMode)) {
+                    return name + " is not available with indirect-y addressing";
+                }
+
+                const auto value = getNumberValue(tokens[index + 1]);
+
+                if (!std::in_range<uint8_t>(value)) {
+                    return "number must be in the $00..$FF range";
+                }
+
+                bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
+
+                index += 6;
                 continue;
             }
         }
