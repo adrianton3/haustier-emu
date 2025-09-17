@@ -46,20 +46,36 @@ void tokenizeDebug (const std::string& source) {
     }
 }
 
-void assemblerDebug (const std::string& source) {
-    const auto bytesOrError = assemble(source);
+std::vector<uint8_t> assemble (const std::string& source) {
+    const auto tokensOrError = tokenize(source);
 
-    if (const auto* bytes = std::get_if<std::vector<uint8_t>>(&bytesOrError)) {
-        for (const auto byte : *bytes) {
-            printf("0x%02x ", byte);
-        }
-
-        printf("\n");
-    } else {
-        const auto error = std::get<std::string>(bytesOrError);
-
-        printf("error: %s\n", error.c_str());
+    if (const auto* error = std::get_if<std::string>(&tokensOrError)) {
+        printf("error: %s\n", error->c_str());
     }
+
+    const auto bytesOrError = assemble(std::get<std::vector<Token>>(tokensOrError));
+
+    if (const auto* error = std::get_if<std::string>(&bytesOrError)) {
+        printf("error: %s\n", error->c_str());
+    }
+
+    return std::get<std::vector<uint8_t>>(bytesOrError);
+}
+
+void assembleDebug (const std::string& source) {
+    const auto bytes = assemble(source);
+
+    for (const auto byte : bytes) {
+        printf("0x%02x ", byte);
+    }
+
+    printf("\n");
+}
+
+void assembleBytes (const std::string& source) {
+    const auto bytes = assemble(source);
+
+    fwrite(bytes.data(), 1, bytes.size(), stdout);
 }
 
 void printUsage (char* path) {
@@ -68,8 +84,10 @@ void printUsage (char* path) {
         "Usage:\n"
         " %s <binary-file>\n"
         " %s help\n"
-        " %s tokenize <source-file>\n"
         " %s compile <source-file>\n",
+        "\n"
+        " %s tokenize <source-file>\n"
+        " %s compile-debug <source-file>\n",
         path, path, path, path
     );
 }
@@ -98,10 +116,17 @@ int main (int argc, char* argv[]) {
             return 0;
         }
 
+        if (strcmp(argv[1], "compile-debug") == 0) {
+            std::ifstream file { argv[2] };
+            const std::string source { std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>() };
+            assembleDebug(source);
+            return 0;
+        }
+
         if (strcmp(argv[1], "compile") == 0) {
             std::ifstream file { argv[2] };
             const std::string source { std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>() };
-            assemblerDebug(source);
+            assembleBytes(source);
             return 0;
         }
     }

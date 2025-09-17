@@ -190,5 +190,9 @@ std::variant<std::vector<Token>, std::string> tokenize (const std::string& sourc
         // index++; // for every other char out there??
     }
 
+    if (tokens.empty() || tokens.back().index() != static_cast<size_t>(TokenType::NewLine)) {
+        tokens.emplace_back(NewLine {});
+    }
+
     return tokens;
 }

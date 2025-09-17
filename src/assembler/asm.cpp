@@ -47,16 +47,7 @@ struct Link {
     std::string name;
 };
 
-std::variant<std::vector<uint8_t>, std::string> assemble (const std::string& source) {
-    const auto tokensOrError = tokenize(source);
-
-    if (const auto* error = std::get_if<std::string>(&tokensOrError)) {
-        return *error;
-    }
-
-    auto tokens = std::get<std::vector<Token>> (tokensOrError);
-    tokens.emplace_back(NewLine {});
-
+std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Token>& tokens) {
     std::vector<uint8_t> bytes;
     std::unordered_map<std::string, uint16_t> labels;
     std::vector<Link> links;
