@@ -32,6 +32,15 @@ bool isFollowNumber (char ch) {
     return ch == ' ' || ch == '\n' || ch == ',' || ch == ';';
 }
 
+template<int Base>
+std::variant<int64_t, std::string> parseNumber (const char* start) {
+    // errno = 0;
+    const auto value = std::strtol(start, nullptr, Base);
+    // check errno
+
+    return { value };
+}
+
 
 struct ChopResult {
     Token token;
@@ -54,11 +63,38 @@ std::variant<ChopResult, std::string> chopIdentifier (const std::string& source,
 }
 
 std::variant<ChopResult, std::string> chopNumberHex (const std::string& source, int indexStart) {
-    return { "can't chop numbers yet" };
+    indexStart++;
+    if (indexStart >= source.size() || !isNumberHexTailChar(source[indexStart])) {
+        return { "expected a hex number after '$'" };
+    }
+
+    auto index = indexStart;
+
+    while (true) {
+        // remove this loop since strtol does it itself ?
+        if (index >= source.length() || isFollowNumber(source[index])) {
+            const auto result = parseNumber<16>(source.c_str() + indexStart);
+
+            if (const auto* value = std::get_if<int64_t>(&result)) {
+                return ChopResult {
+                    Number { *value },
+                    index
+                };
+            }
+
+            return { std::get<std::string>(result) };
+        }
+
+        if (!isNumberHexTailChar(source[index])) {
+            return { std::string { "unexpected '" } + source[index + 1] + '\'' };
+        }
+
+        index++;
+    }
 }
 
 std::variant<ChopResult, std::string> chopNumberDec (const std::string& source, int indexStart) {
-    return { "can't chop numbers yet" };
+    return { "can't chop nnumbers yet" };
 }
 
 int ignoreComment (const std::string& source, int indexStart) {
@@ -236,6 +272,26 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::string& sou
 
                 bytes.push_back(opcodes[insAndMode]);
                 index++;
+                continue;
+            }
+
+            if (matches<TokenType::Number, TokenType::NewLine>(tokens, index)) {
+                // zero-page
+                const InsAndMode insAndMode { name, AddressingMode::ZeroPage };
+
+                if (!opcodes.contains(insAndMode)) {
+                    return name + " is not available with zero-page addressing";
+                }
+
+                const auto value = getNumberValue(tokens[index]);
+
+                if (!std::in_range<uint8_t>(value)) {
+                    return "zero-page range is $00-$FF";
+                }
+
+                bytes.insert(bytes.end(), { opcodes[insAndMode], static_cast<uint8_t>(value) });
+
+                index += 2;
                 continue;
             }
 
