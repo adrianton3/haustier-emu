@@ -90,7 +90,29 @@ std::variant<ChopResult, std::string> chopNumberHex (const std::string& source, 
 }
 
 std::variant<ChopResult, std::string> chopNumberDec (const std::string& source, int indexStart) {
-    return { "can't chop nnumbers yet" };
+    auto index = indexStart;
+
+    while (true) {
+        // remove this loop since strtol does it itself ?
+        if (index >= source.length() || isFollowNumber(source[index])) {
+            const auto result = parseNumber<10>(source.c_str() + indexStart);
+
+            if (const auto* value = std::get_if<int64_t>(&result)) {
+                return ChopResult {
+                    Number { *value },
+                    index
+                };
+            }
+
+            return { std::get<std::string>(result) };
+        }
+
+        if (!isNumberDecChar(source[index])) {
+            return { std::string { "unexpected '" } + source[index] + '\'' };
+        }
+
+        index++;
+    }
 }
 
 int ignoreComment (const std::string& source, int indexStart) {
