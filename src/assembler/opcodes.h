@@ -9,12 +9,14 @@
 enum class AddressingMode : uint8_t {
     Absolute,
     AbsoluteX,
+    AbsoluteY,
     Accumulator,
     Immediate,
     Implied,
     Relative,
     ZeroPage,
     ZeroPageX,
+    ZeroPageY,
 };
 
 struct InsAndMode {
@@ -34,12 +36,14 @@ struct std::hash<InsAndMode> {
 static std::unordered_map<InsAndMode, uint8_t> opcodes {
     { { "ADC", AddressingMode::Absolute }, 0x6D },
     { { "ADC", AddressingMode::AbsoluteX }, 0x7D },
+    { { "ADC", AddressingMode::AbsoluteY }, 0x79 },
     { { "ADC", AddressingMode::Immediate }, 0x69 },
     { { "ADC", AddressingMode::ZeroPage }, 0x65 },
     { { "ADC", AddressingMode::ZeroPageX }, 0x75 },
 
     { { "AND", AddressingMode::Absolute }, 0x2D },
     { { "AND", AddressingMode::AbsoluteX }, 0x3D },
+    { { "AND", AddressingMode::AbsoluteY }, 0x39 },
     { { "AND", AddressingMode::Immediate }, 0x29 },
     { { "AND", AddressingMode::ZeroPage }, 0x25 },
     { { "AND", AddressingMode::ZeroPageX }, 0x35 },
@@ -81,6 +85,7 @@ static std::unordered_map<InsAndMode, uint8_t> opcodes {
 
     { { "CMP", AddressingMode::Absolute }, 0xCD },
     { { "CMP", AddressingMode::AbsoluteX }, 0xDD },
+    { { "CMP", AddressingMode::AbsoluteY }, 0xD9 },
     { { "CMP", AddressingMode::Immediate }, 0xC9 },
     { { "CMP", AddressingMode::ZeroPage }, 0xC5 },
     { { "CMP", AddressingMode::ZeroPageX }, 0xD5 },
@@ -106,6 +111,7 @@ static std::unordered_map<InsAndMode, uint8_t> opcodes {
 
     { { "EOR", AddressingMode::Absolute }, 0x4D },
     { { "EOR", AddressingMode::AbsoluteX }, 0x5D },
+    { { "EOR", AddressingMode::AbsoluteY }, 0x59 },
     { { "EOR", AddressingMode::Immediate }, 0x49 },
     { { "EOR", AddressingMode::ZeroPage }, 0x45 },
     { { "EOR", AddressingMode::ZeroPageX }, 0x55 },
@@ -125,13 +131,16 @@ static std::unordered_map<InsAndMode, uint8_t> opcodes {
 
     { { "LDA", AddressingMode::Absolute }, 0xAD },
     { { "LDA", AddressingMode::AbsoluteX }, 0xBD },
+    { { "LDA", AddressingMode::AbsoluteY }, 0xB9 },
     { { "LDA", AddressingMode::Immediate }, 0xA9 },
     { { "LDA", AddressingMode::ZeroPage }, 0xA5 },
     { { "LDA", AddressingMode::ZeroPageX }, 0xB5 },
 
     { { "LDX", AddressingMode::Absolute }, 0xAE },
+    { { "LDX", AddressingMode::AbsoluteY }, 0xBE },
     { { "LDX", AddressingMode::Immediate }, 0xA2 },
     { { "LDX", AddressingMode::ZeroPage }, 0xA6 },
+    { { "LDX", AddressingMode::ZeroPageY }, 0xB6 },
 
     { { "LDY", AddressingMode::Absolute }, 0xAC },
     { { "LDY", AddressingMode::AbsoluteX }, 0xBC },
@@ -149,6 +158,7 @@ static std::unordered_map<InsAndMode, uint8_t> opcodes {
 
     { { "ORA", AddressingMode::Absolute }, 0x0D },
     { { "ORA", AddressingMode::AbsoluteX }, 0x1D },
+    { { "ORA", AddressingMode::AbsoluteY }, 0x19 },
     { { "ORA", AddressingMode::Immediate }, 0x09 },
     { { "ORA", AddressingMode::ZeroPage }, 0x05 },
     { { "ORA", AddressingMode::ZeroPageX }, 0x15 },
@@ -179,6 +189,7 @@ static std::unordered_map<InsAndMode, uint8_t> opcodes {
 
     { { "SBC", AddressingMode::Absolute }, 0xED },
     { { "SBC", AddressingMode::AbsoluteX }, 0xFD },
+    { { "SBC", AddressingMode::AbsoluteY }, 0xF9 },
     { { "SBC", AddressingMode::Immediate }, 0xE9 },
     { { "SBC", AddressingMode::ZeroPage }, 0xE5 },
     { { "SBC", AddressingMode::ZeroPageX }, 0xF5 },
@@ -189,11 +200,13 @@ static std::unordered_map<InsAndMode, uint8_t> opcodes {
 
     { { "STA", AddressingMode::Absolute }, 0x8D },
     { { "STA", AddressingMode::AbsoluteX }, 0x9D },
+    { { "STA", AddressingMode::AbsoluteY }, 0x99 },
     { { "STA", AddressingMode::ZeroPage }, 0x85 },
     { { "STA", AddressingMode::ZeroPageX }, 0x95 },
 
     { { "STX", AddressingMode::Absolute }, 0x8E },
     { { "STX", AddressingMode::ZeroPage }, 0x86 },
+    { { "STX", AddressingMode::ZeroPageY }, 0x96 },
 
     { { "STY", AddressingMode::Absolute }, 0x8C },
     { { "STY", AddressingMode::ZeroPage }, 0x84 },

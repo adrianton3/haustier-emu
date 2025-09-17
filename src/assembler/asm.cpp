@@ -167,12 +167,17 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::string& sou
                 continue;
             }
 
-            if (matches<TokenType::Number, TokenType::Comma, TokenType::Identifier, TokenType::NewLine>(tokens, index) && getIdentifierName(tokens[index + 2]) == "X") {
+            if (matches<TokenType::Number, TokenType::Comma, TokenType::Identifier, TokenType::NewLine>(tokens, index)) {
+                const auto xy = getIdentifierName(tokens[index + 2]);
+                if (xy != "X" && xy != "Y") {
+                    return "must be X or Y";
+                }
+
                 const auto value = getNumberValue(tokens[index]);
 
                 if (std::in_range<uint8_t>(value)) {
                     // zero-page
-                    const InsAndMode insAndMode { name, AddressingMode::ZeroPageX };
+                    const InsAndMode insAndMode { name, xy == "X" ? AddressingMode::ZeroPageX : AddressingMode::ZeroPageY };
 
                     if (!opcodes.contains(insAndMode)) {
                         return name + " is not available with zero-page-x addressing";
@@ -181,7 +186,7 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::string& sou
                     bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
                 } else if (std::in_range<uint16_t>(value)) {
                     // absolute
-                    const InsAndMode insAndMode { name, AddressingMode::AbsoluteX };
+                    const InsAndMode insAndMode { name, xy == "X" ? AddressingMode::AbsoluteX : AddressingMode::AbsoluteY };
 
                     if (!opcodes.contains(insAndMode)) {
                         return name + " is not available with absolute-x addressing";

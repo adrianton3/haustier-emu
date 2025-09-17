@@ -1,5 +1,0 @@
-ORA $12
-ORA $CDEF
-ORA #$12
-ORA $12,X
-ORA $1234,X
