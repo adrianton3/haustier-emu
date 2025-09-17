@@ -92,26 +92,6 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::string& sou
                 continue;
             }
 
-            if (matches<TokenType::Hash, TokenType::Number, TokenType::NewLine>(tokens, index)) {
-                // immediate
-                const InsAndMode insAndMode { name, AddressingMode::Immediate };
-
-                if (!opcodes.contains(insAndMode)) {
-                    return name + " is not available with immediate addressing";
-                }
-
-                const auto value = getNumberValue(tokens[index + 1]);
-
-                if (!std::in_range<uint8_t>(value)) {
-                    return "immediate value must be in the $00..$FF range";
-                }
-
-                bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
-
-                index += 3;
-                continue;
-            }
-
             if (matches<TokenType::Number, TokenType::NewLine>(tokens, index)) {
                 const auto value = getNumberValue(tokens[index]);
 
@@ -164,6 +144,55 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::string& sou
                 }
 
                 index += 2;
+                continue;
+            }
+
+            if (matches<TokenType::Hash, TokenType::Number, TokenType::NewLine>(tokens, index)) {
+                // immediate
+                const InsAndMode insAndMode { name, AddressingMode::Immediate };
+
+                if (!opcodes.contains(insAndMode)) {
+                    return name + " is not available with immediate addressing";
+                }
+
+                const auto value = getNumberValue(tokens[index + 1]);
+
+                if (!std::in_range<uint8_t>(value)) {
+                    return "immediate value must be in the $00..$FF range";
+                }
+
+                bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
+
+                index += 3;
+                continue;
+            }
+
+            if (matches<TokenType::Number, TokenType::Comma, TokenType::Identifier, TokenType::NewLine>(tokens, index) && getIdentifierName(tokens[index + 2]) == "X") {
+                const auto value = getNumberValue(tokens[index]);
+
+                if (std::in_range<uint8_t>(value)) {
+                    // zero-page
+                    const InsAndMode insAndMode { name, AddressingMode::ZeroPageX };
+
+                    if (!opcodes.contains(insAndMode)) {
+                        return name + " is not available with zero-page-x addressing";
+                    }
+
+                    bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
+                } else if (std::in_range<uint16_t>(value)) {
+                    // absolute
+                    const InsAndMode insAndMode { name, AddressingMode::AbsoluteX };
+
+                    if (!opcodes.contains(insAndMode)) {
+                        return name + " is not available with absolute-x addressing";
+                    }
+
+                    bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value), getByte<1>(value) });
+                } else {
+                    return "argument too large";
+                }
+
+                index += 4;
                 continue;
             }
         }

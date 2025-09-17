@@ -5,7 +5,7 @@
 #include <variant>
 
 
-enum class TokenType {
+enum class TokenType : uint8_t {
     Number,
     Identifier,
     Colon,
