@@ -25,7 +25,7 @@ bool isNumberHexTailChar (char ch) {
 }
 
 bool isFollowNumber (char ch) {
-    return ch == ' ' || ch == '\n' || ch == ',' || ch == ';';
+    return ch == ' ' || ch == '\n' || ch == ',' || ch == ';' || ch == ')';
 }
 
 template<int Base>
@@ -82,7 +82,7 @@ std::variant<ChopResult, std::string> chopNumberHex (const std::string& source, 
         }
 
         if (!isNumberHexTailChar(source[index])) {
-            return { std::string { "unexpected '" } + source[index + 1] + '\'' };
+            return { std::string { "unexpected '" } + source[index] + '\'' };
         }
 
         index++;

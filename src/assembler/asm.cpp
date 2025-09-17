@@ -200,6 +200,25 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::string& sou
                 index += 4;
                 continue;
             }
+
+            if (matches<TokenType::ParOpen, TokenType::Number, TokenType::ParClosed, TokenType::NewLine>(tokens, index)) {
+                const InsAndMode insAndMode { name, AddressingMode::Indirect };
+
+                if (!opcodes.contains(insAndMode)) {
+                    return name + " is not available with indirect addressing";
+                }
+
+                const auto value = getNumberValue(tokens[index]);
+
+                if (!std::in_range<uint16_t>(value)) {
+                    return "number must be in the $0000..$FFFF range";
+                }
+
+                bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value), getByte<1>(value) });
+
+                index += 4;
+                continue;
+            }
         }
 
         return "not cool";

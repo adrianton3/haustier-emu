@@ -13,6 +13,7 @@ enum class AddressingMode : uint8_t {
     Accumulator,
     Immediate,
     Implied,
+    Indirect,
     Relative,
     ZeroPage,
     ZeroPageX,
@@ -126,6 +127,7 @@ static std::unordered_map<InsAndMode, uint8_t> opcodes {
     { { "INY", AddressingMode::Implied }, 0xC8 },
 
     { { "JMP", AddressingMode::Absolute }, 0x4C },
+    { { "JMP", AddressingMode::Indirect }, 0x6C },
 
     { { "JSR", AddressingMode::Absolute }, 0x20 },
 
