@@ -9,6 +9,11 @@
 
 
 
+template <uint64_t Index>
+constexpr uint8_t getByte (uint64_t value) {
+    return (value >> (Index * 8)) & 0xff;
+}
+
 std::string getIdentifierName (const Token& identifier) {
     return std::get<Identifier>(identifier).name;
 }
@@ -88,20 +93,29 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::string& sou
             }
 
             if (matches<TokenType::Number, TokenType::NewLine>(tokens, index)) {
-                // zero-page
-                const InsAndMode insAndMode { name, AddressingMode::ZeroPage };
-
-                if (!opcodes.contains(insAndMode)) {
-                    return name + " is not available with zero-page addressing";
-                }
-
                 const auto value = getNumberValue(tokens[index]);
 
-                if (!std::in_range<uint8_t>(value)) {
-                    return "zero-page range is $00-$FF";
-                }
+                if (std::in_range<uint8_t>(value)) {
+                    // zero-page
+                    const InsAndMode insAndMode { name, AddressingMode::ZeroPage };
 
-                bytes.insert(bytes.end(), { opcodes[insAndMode], static_cast<uint8_t>(value) });
+                    if (!opcodes.contains(insAndMode)) {
+                        return name + " is not available with zero-page addressing";
+                    }
+
+                    bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
+                } else if (std::in_range<uint16_t>(value)) {
+                    // absolute
+                    const InsAndMode insAndMode { name, AddressingMode::Absolute };
+
+                    if (!opcodes.contains(insAndMode)) {
+                        return name + " is not available with absolute addressing";
+                    }
+
+                    bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<1>(value), getByte<0>(value) });
+                } else {
+                    return "argument too large";
+                }
 
                 index += 2;
                 continue;
