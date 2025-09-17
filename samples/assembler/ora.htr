@@ -1,2 +1,3 @@
 ORA $12
 ORA $CDEF
+ORA #$12
