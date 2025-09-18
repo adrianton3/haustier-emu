@@ -86,6 +86,26 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
             if (matches<TokenType::Number, TokenType::NewLine>(tokens, index)) {
                 const auto value = getNumberValue(tokens[index]);
 
+                if (name == "BYTE") {
+                    if (!std::in_range<uint8_t>(value)) {
+                        return "does not fit in a byte";
+                    }
+
+                    bytes.push_back(static_cast<uint8_t>(value));
+                    index += 2;
+                    continue;
+                }
+
+                if (name == "WORD") {
+                    if (!std::in_range<uint16_t>(value)) {
+                        return "does not fit in a word";
+                    }
+
+                    bytes.insert(bytes.end(), { getByte<0>(value), getByte<1>(value) });
+                    index += 2;
+                    continue;
+                }
+
                 if (std::in_range<uint8_t>(value)) {
                     // zero-page
                     const InsAndMode insAndMode { name, AddressingMode::ZeroPage };
