@@ -3,7 +3,7 @@
 
 #include <string>
 #include <unordered_map>
-
+#include <unordered_set>
 
 
 enum class AddressingMode : uint8_t {
@@ -244,6 +244,16 @@ static std::unordered_map<InsAndMode, uint8_t> opcodes {
 
     { { "TYA", AddressingMode::Implied }, 0x98 },
 };
+
+static std::unordered_set<std::string> insNames = [] {
+    std::unordered_set<std::string> names;
+
+    for (const auto& entry : opcodes) {
+        names.insert(entry.first.name);
+    }
+
+    return names;
+}();
 
 
 

@@ -7,6 +7,7 @@
 
 #include "asm.h"
 
+#include "ParserError.h"
 
 
 template <uint64_t Index>
@@ -45,15 +46,20 @@ bool matches (const std::vector<Token>& tokens, size_t index) {
 struct Link {
     uint16_t offset;
     std::string name;
+    int lineIndex;
 };
 
-std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Token>& tokens) {
+std::variant<std::vector<uint8_t>, ParserError> assemble (const std::vector<Token>& tokens) {
     std::vector<uint8_t> bytes;
     std::unordered_map<std::string, uint16_t> labels;
     std::vector<Link> links;
 
     auto index = 0;
+    auto lineIndex = -1;
+
     while (index < tokens.size()) {
+        lineIndex++;
+
         if (matches<TokenType::NewLine>(tokens, index)) {
             index++;
             continue;
@@ -61,7 +67,13 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
 
         if (matches<TokenType::Identifier, TokenType::Colon, TokenType::NewLine>(tokens, index)) {
             const auto& name = getIdentifierName(tokens[index]);
+
+            if (labels.contains(name)) {
+                return ParserError { "Label '" + name + "' already declared", lineIndex };
+            }
+
             labels[name] = bytes.size();
+
             index += 3;
             continue;
         }
@@ -70,12 +82,16 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
             const auto& name = getIdentifierName(tokens[index]);
             index++;
 
+            if (name != "BYTE" && name != "WORD" && !insNames.contains(name)) {
+                return ParserError { "Unrecognized instruction '" + name + '\'', lineIndex };
+            }
+
             if (matches<TokenType::NewLine>(tokens, index)) {
                 // implied
                 const InsAndMode insAndMode { name, AddressingMode::Implied };
 
                 if (!opcodes.contains(insAndMode)) {
-                    return "not cool";
+                    return ParserError { name + " is not available with implied addressing", lineIndex };
                 }
 
                 bytes.push_back(opcodes[insAndMode]);
@@ -88,7 +104,7 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
 
                 if (name == "BYTE") {
                     if (!std::in_range<uint8_t>(value)) {
-                        return "does not fit in a byte";
+                        return ParserError { std::to_string(value) + " does not fit in a byte", lineIndex };
                     }
 
                     bytes.push_back(static_cast<uint8_t>(value));
@@ -98,7 +114,7 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
 
                 if (name == "WORD") {
                     if (!std::in_range<uint16_t>(value)) {
-                        return "does not fit in a word";
+                        return ParserError { std::to_string(value) + " does not fit in a word", lineIndex };
                     }
 
                     bytes.insert(bytes.end(), { getByte<0>(value), getByte<1>(value) });
@@ -111,7 +127,7 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
                     const InsAndMode insAndMode { name, AddressingMode::ZeroPage };
 
                     if (!opcodes.contains(insAndMode)) {
-                        return name + " is not available with zero-page addressing";
+                        return ParserError { name + " is not available with zero-page addressing", lineIndex };
                     }
 
                     bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
@@ -120,12 +136,12 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
                     const InsAndMode insAndMode { name, AddressingMode::Absolute };
 
                     if (!opcodes.contains(insAndMode)) {
-                        return name + " is not available with absolute addressing";
+                        return ParserError { name + " is not available with absolute addressing", lineIndex };
                     }
 
                     bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value), getByte<1>(value) });
                 } else {
-                    return "argument too large";
+                    return ParserError { std::to_string(value) + " does not fit in a word", lineIndex };
                 }
 
                 index += 2;
@@ -138,7 +154,7 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
                     const InsAndMode insAndMode { name, AddressingMode::Accumulator };
 
                     if (!opcodes.contains(insAndMode)) {
-                        return "not cool";
+                        return ParserError { name + " is not available with accumulator addressing", lineIndex };
                     }
 
                     bytes.push_back(opcodes[insAndMode]);
@@ -147,11 +163,11 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
                     const InsAndMode insAndMode { name, AddressingMode::Relative };
 
                     if (!opcodes.contains(insAndMode)) {
-                        return "not cool";
+                        return ParserError { name + " is not available with relative addressing", lineIndex };
                     }
 
                     bytes.insert(bytes.end(), { opcodes[insAndMode], 0x00 });
-                    links.emplace_back(bytes.size() - 1, getIdentifierName(tokens[index]));
+                    links.emplace_back(bytes.size() - 1, getIdentifierName(tokens[index]), lineIndex);
                 }
 
                 index += 2;
@@ -163,13 +179,13 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
                 const InsAndMode insAndMode { name, AddressingMode::Immediate };
 
                 if (!opcodes.contains(insAndMode)) {
-                    return name + " is not available with immediate addressing";
+                    return ParserError { name + " is not available with immediate addressing", lineIndex };
                 }
 
                 const auto value = getNumberValue(tokens[index + 1]);
 
                 if (!std::in_range<uint8_t>(value)) {
-                    return "immediate value must be in the $00..$FF range";
+                    return ParserError { std::to_string(value) + " does not fit in a byte", lineIndex };
                 }
 
                 bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
@@ -181,7 +197,7 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
             if (matches<TokenType::Number, TokenType::Comma, TokenType::Identifier, TokenType::NewLine>(tokens, index)) {
                 const auto xy = getIdentifierName(tokens[index + 2]);
                 if (xy != "X" && xy != "Y") {
-                    return "must be X or Y";
+                    return ParserError { "expected X or Y as offsets", lineIndex };
                 }
 
                 const auto value = getNumberValue(tokens[index]);
@@ -191,7 +207,7 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
                     const InsAndMode insAndMode { name, xy == "X" ? AddressingMode::ZeroPageX : AddressingMode::ZeroPageY };
 
                     if (!opcodes.contains(insAndMode)) {
-                        return name + " is not available with zero-page-x addressing";
+                        return ParserError { name + " is not available with zero-page addressing", lineIndex };
                     }
 
                     bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
@@ -200,12 +216,12 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
                     const InsAndMode insAndMode { name, xy == "X" ? AddressingMode::AbsoluteX : AddressingMode::AbsoluteY };
 
                     if (!opcodes.contains(insAndMode)) {
-                        return name + " is not available with absolute-x addressing";
+                        return ParserError { name + " is not available with absolute addressing", lineIndex };
                     }
 
                     bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value), getByte<1>(value) });
                 } else {
-                    return "argument too large";
+                    return ParserError { std::to_string(value) + " does not fit in a word", lineIndex };
                 }
 
                 index += 4;
@@ -216,13 +232,13 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
                 const InsAndMode insAndMode { name, AddressingMode::Indirect };
 
                 if (!opcodes.contains(insAndMode)) {
-                    return name + " is not available with indirect addressing";
+                    return ParserError { name + " is not available with indirect addressing", lineIndex };
                 }
 
                 const auto value = getNumberValue(tokens[index + 1]);
 
                 if (!std::in_range<uint16_t>(value)) {
-                    return "number must be in the $0000..$FFFF range";
+                    return ParserError { std::to_string(value) + " does not fit in a word", lineIndex };
                 }
 
                 bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value), getByte<1>(value) });
@@ -238,13 +254,13 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
                 const InsAndMode insAndMode { name, AddressingMode::IndirectX };
 
                 if (!opcodes.contains(insAndMode)) {
-                    return name + " is not available with indirect-x addressing";
+                    return ParserError { name + " is not available with indirect-x addressing", lineIndex };
                 }
 
                 const auto value = getNumberValue(tokens[index + 1]);
 
                 if (!std::in_range<uint8_t>(value)) {
-                    return "number must be in the $00..$FF range";
+                    return ParserError { std::to_string(value) + " does not fit in a byte", lineIndex };
                 }
 
                 bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
@@ -260,13 +276,13 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
                 const InsAndMode insAndMode { name, AddressingMode::IndirectY };
 
                 if (!opcodes.contains(insAndMode)) {
-                    return name + " is not available with indirect-y addressing";
+                    return ParserError { name + " is not available with indirect-y addressing", lineIndex };
                 }
 
                 const auto value = getNumberValue(tokens[index + 1]);
 
                 if (!std::in_range<uint8_t>(value)) {
-                    return "number must be in the $00..$FF range";
+                    return ParserError { std::to_string(value) + " does not fit in a byte", lineIndex };
                 }
 
                 bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
@@ -276,18 +292,18 @@ std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Toke
             }
         }
 
-        return "not cool";
+        return ParserError { "expecting a label, BYTE, WORD or instruction", lineIndex };
     }
 
     for (const auto& link : links) {
         if (!labels.contains(link.name)) {
-            return "not cool";
+            return ParserError { "label '" + link.name + "' is undeclared", link.lineIndex };
         }
 
         const auto delta = static_cast<int64_t>(labels[link.name]) - static_cast<int64_t>(link.offset) - 1;
 
         if (!std::in_range<int8_t>(delta)) {
-            return "not cool";
+            return ParserError { "jump target is too far from jump instruction", lineIndex };
         }
 
         bytes[link.offset] = delta;

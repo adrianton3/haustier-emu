@@ -40,23 +40,25 @@ void tokenizeDebug (const std::string& source) {
 
         printf("\n");
     } else {
-        const auto error = std::get<std::string>(tokensOrError);
+        const auto error = std::get<ParserError>(tokensOrError);
 
-        printf("error: %s\n", error.c_str());
+        printf("error in line %d: %s\n", error.lineIndex + 1, error.message.c_str());
     }
 }
 
 std::vector<uint8_t> assemble (const std::string& source) {
     const auto tokensOrError = tokenize(source);
 
-    if (const auto* error = std::get_if<std::string>(&tokensOrError)) {
-        printf("error: %s\n", error->c_str());
+    if (const auto* error = std::get_if<ParserError>(&tokensOrError)) {
+        printf("error in line %d: %s\n", error->lineIndex + 1, error->message.c_str());
+        return {};
     }
 
     const auto bytesOrError = assemble(std::get<std::vector<Token>>(tokensOrError));
 
-    if (const auto* error = std::get_if<std::string>(&bytesOrError)) {
-        printf("error: %s\n", error->c_str());
+    if (const auto* error = std::get_if<ParserError>(&bytesOrError)) {
+        printf("error in line %d: %s\n", error->lineIndex + 1, error->message.c_str());
+        return {};
     }
 
     return std::get<std::vector<uint8_t>>(bytesOrError);
@@ -84,11 +86,11 @@ void printUsage (char* path) {
         "Usage:\n"
         " %s <binary-file>\n"
         " %s help\n"
-        " %s compile <source-file>\n",
+        " %s compile <source-file>\n"
         "\n"
         " %s tokenize <source-file>\n"
         " %s compile-debug <source-file>\n",
-        path, path, path, path
+        path, path, path, path, path
     );
 }
 

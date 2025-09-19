@@ -3,11 +3,12 @@
 
 #include <vector>
 
+#include "ParserError.h"
 #include "Token.h"
 
 
 
-std::variant<std::vector<uint8_t>, std::string> assemble (const std::vector<Token>&);
+std::variant<std::vector<uint8_t>, ParserError> assemble (const std::vector<Token>&);
 
 
 

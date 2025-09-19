@@ -2,6 +2,7 @@
 
 #include "tokenize.h"
 
+#include "ParserError.h"
 
 
 bool isIdentifierHeadChar (char ch) {
@@ -43,7 +44,7 @@ struct ChopResult {
     int index;
 };
 
-std::variant<ChopResult, std::string> chopIdentifier (const std::string& source, int indexStart) {
+ChopResult chopIdentifier (const std::string& source, int indexStart) {
     auto index = indexStart;
 
     while (true) {
@@ -58,10 +59,10 @@ std::variant<ChopResult, std::string> chopIdentifier (const std::string& source,
     }
 }
 
-std::variant<ChopResult, std::string> chopNumberHex (const std::string& source, int indexStart) {
+std::variant<ChopResult, ParserError> chopNumberHex (const std::string& source, int indexStart, int lineIndex) {
     indexStart++;
     if (indexStart >= source.size() || !isNumberHexTailChar(source[indexStart])) {
-        return { "expected a hex number after '$'" };
+        return ParserError { "expected a hex number after '$'", lineIndex };
     }
 
     auto index = indexStart;
@@ -78,18 +79,18 @@ std::variant<ChopResult, std::string> chopNumberHex (const std::string& source, 
                 };
             }
 
-            return { std::get<std::string>(result) };
+            return ParserError { std::get<std::string>(result), lineIndex };
         }
 
         if (!isNumberHexTailChar(source[index])) {
-            return { std::string { "unexpected '" } + source[index] + '\'' };
+            return ParserError { std::string { "unexpected '" } + source[index] + '\'', lineIndex };
         }
 
         index++;
     }
 }
 
-std::variant<ChopResult, std::string> chopNumberDec (const std::string& source, int indexStart) {
+std::variant<ChopResult, ParserError> chopNumberDec (const std::string& source, int indexStart, int lineIndex) {
     auto index = indexStart;
 
     while (true) {
@@ -104,11 +105,11 @@ std::variant<ChopResult, std::string> chopNumberDec (const std::string& source, 
                 };
             }
 
-            return { std::get<std::string>(result) };
+            return ParserError { std::get<std::string>(result), lineIndex };
         }
 
         if (!isNumberDecChar(source[index])) {
-            return { std::string { "unexpected '" } + source[index] + '\'' };
+            return ParserError { std::string { "unexpected '" } + source[index] + '\'', lineIndex };
         }
 
         index++;
@@ -127,38 +128,35 @@ int ignoreComment (const std::string& source, int indexStart) {
     }
 }
 
-std::variant<std::vector<Token>, std::string> tokenize (const std::string& source) {
+std::variant<std::vector<Token>, ParserError> tokenize (const std::string& source) {
     std::vector<Token> tokens;
     auto index = 0;
+    auto lineIndex = 0;
 
     while (index < source.length()) {
         if (isIdentifierHeadChar(source[index])) {
-            const auto result = chopIdentifier(source, index);
-            if (const auto* nameAndIndex = std::get_if<ChopResult>(&result)) {
-                tokens.emplace_back(nameAndIndex->token);
-                index = nameAndIndex->index;
-            } else {
-                return { std::get<std::string>(result) };
-            }
+            const auto nameAndIndex = chopIdentifier(source, index);
+            tokens.emplace_back(nameAndIndex.token);
+            index = nameAndIndex.index;
         }
 
         if (isNumberDecChar(source[index])) {
-            const auto result = chopNumberDec(source, index);
+            const auto result = chopNumberDec(source, index, lineIndex);
             if (const auto* valueAndIndex = std::get_if<ChopResult>(&result)) {
                 tokens.emplace_back(valueAndIndex->token);
                 index = valueAndIndex->index;
             } else {
-                return { std::get<std::string>(result) };
+                return { std::get<ParserError>(result) };
             }
         }
 
         if (isNumberHexHeadChar(source[index])) {
-            const auto result = chopNumberHex(source, index);
+            const auto result = chopNumberHex(source, index, lineIndex);
             if (const auto* valueAndIndex = std::get_if<ChopResult>(&result)) {
                 tokens.emplace_back(valueAndIndex->token);
                 index = valueAndIndex->index;
             } else {
-                return { std::get<std::string>(result) };
+                return { std::get<ParserError>(result) };
             }
         }
 
@@ -195,6 +193,7 @@ std::variant<std::vector<Token>, std::string> tokenize (const std::string& sourc
         if (source[index] == '\n') {
             tokens.emplace_back(NewLine {});
             index++;
+            lineIndex++;
             continue;
         }
 
@@ -206,6 +205,7 @@ std::variant<std::vector<Token>, std::string> tokenize (const std::string& sourc
         if (source[index] == ';') {
             tokens.emplace_back(NewLine {});
             index = ignoreComment(source, index);
+            lineIndex++;
             continue;
         }
 
