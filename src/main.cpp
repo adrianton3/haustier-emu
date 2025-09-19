@@ -9,6 +9,9 @@
 
 #include "assembler/tokenize.h"
 #include "assembler/asm.h"
+#include "disassembler/disasm.h"
+
+
 
 void run (const char* binaryFile) {
     InitWindow(640, 400, "haustier-emu");
@@ -80,6 +83,12 @@ void assembleBytes (const std::string& source) {
     fwrite(bytes.data(), 1, bytes.size(), stdout);
 }
 
+void disassembleBytes (const std::vector<uint8_t>& bytes) {
+    const auto source = disassemble(bytes);
+
+    printf("%s", source.data());
+}
+
 void printUsage (char* path) {
     fprintf(
         stderr,
@@ -129,6 +138,13 @@ int main (int argc, char* argv[]) {
             std::ifstream file { argv[2] };
             const std::string source { std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>() };
             assembleBytes(source);
+            return 0;
+        }
+
+        if (strcmp(argv[1], "decompile") == 0) {
+            std::ifstream file { argv[2], std::ios::binary };
+            const std::vector<uint8_t> bytes { std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>() };
+            disassembleBytes(bytes);
             return 0;
         }
     }
