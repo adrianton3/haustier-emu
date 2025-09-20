@@ -16,6 +16,12 @@ static const auto opcodesInv = [] {
     return opcodesInv;
 }();
 
+std::string dec8 (int8_t value) {
+    char s[5];
+    sprintf(s, "%-4d", value);
+    return std::string { s };
+}
+
 std::string hex8 (uint8_t value) {
     char s[3];
     sprintf(s, "%02x", value);
@@ -131,8 +137,8 @@ std::string disassemble (const std::vector<uint8_t>& bytes) {
                 break;
 
             case AddressingMode::Relative:
-                source += " *" + std::to_string(static_cast<int8_t>(bytes[index])) +
-                    "           ; " + hex8(opcode) + " " + hex8(bytes[index]) +
+                source += " *" + dec8(static_cast<int8_t>(bytes[index])) +
+                    "         ; " + hex8(opcode) + " " + hex8(bytes[index]) +
                     "       ; " + hex16(index - 1);
                 break;
 
