@@ -114,7 +114,7 @@ static std::unordered_map<InsAndMode, uint8_t> opcodes {
 
     { { "DEI", AddressingMode::Implied }, 0x78 },
 
-    { { "DEX", AddressingMode::Implied }, 0xC9 },
+    { { "DEX", AddressingMode::Implied }, 0xCA },
 
     { { "DEY", AddressingMode::Implied }, 0x88 },
 
@@ -143,7 +143,7 @@ static std::unordered_map<InsAndMode, uint8_t> opcodes {
 
     { { "LDA", AddressingMode::Absolute }, 0xAD },
     { { "LDA", AddressingMode::AbsoluteX }, 0xBD },
-    { { "LDA", AddressingMode::AbsoluteY }, 0xB9 },
+    { { "LDA", AddressingMode::AbsoluteY }, 0xBA },
     { { "LDA", AddressingMode::Immediate }, 0xA9 },
     { { "LDA", AddressingMode::IndirectX }, 0xA1 },
     { { "LDA", AddressingMode::IndirectY }, 0xB1 },
@@ -159,7 +159,7 @@ static std::unordered_map<InsAndMode, uint8_t> opcodes {
     { { "LDY", AddressingMode::Absolute }, 0xAC },
     { { "LDY", AddressingMode::AbsoluteX }, 0xBC },
     { { "LDY", AddressingMode::Immediate }, 0xA0 },
-    { { "LDY", AddressingMode::ZeroPage }, 0xA8 },
+    { { "LDY", AddressingMode::ZeroPage }, 0xA4 },
     { { "LDY", AddressingMode::ZeroPageX }, 0xB4 },
 
     { { "LSR", AddressingMode::Absolute }, 0x4E },
@@ -168,7 +168,7 @@ static std::unordered_map<InsAndMode, uint8_t> opcodes {
     { { "LSR", AddressingMode::ZeroPage }, 0x46 },
     { { "LSR", AddressingMode::ZeroPageX }, 0x56 },
 
-    { { "NOP", AddressingMode::Implied }, 0xE9 },
+    { { "NOP", AddressingMode::Implied }, 0xEA },
 
     { { "ORA", AddressingMode::Absolute }, 0x0D },
     { { "ORA", AddressingMode::AbsoluteX }, 0x1D },
@@ -232,7 +232,7 @@ static std::unordered_map<InsAndMode, uint8_t> opcodes {
     { { "STY", AddressingMode::ZeroPage }, 0x84 },
     { { "STY", AddressingMode::ZeroPageX }, 0x94 },
 
-    { { "TAX", AddressingMode::Implied }, 0xA9 },
+    { { "TAX", AddressingMode::Implied }, 0xAA },
 
     { { "TAY", AddressingMode::Implied }, 0xA8 },
 
@@ -240,7 +240,7 @@ static std::unordered_map<InsAndMode, uint8_t> opcodes {
 
     { { "TXA", AddressingMode::Implied }, 0x89 },
 
-    { { "TXS", AddressingMode::Implied }, 0x99 },
+    { { "TXS", AddressingMode::Implied }, 0x9A },
 
     { { "TYA", AddressingMode::Implied }, 0x98 },
 };
