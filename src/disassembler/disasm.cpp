@@ -41,7 +41,7 @@ std::string disassemble (const std::vector<uint8_t>& bytes) {
         index++;
 
         if (!opcodesInv.contains(opcode)) {
-            source += "BYTE $" + hex8(opcode) + "          ; " + hex8(opcode) + "\n";
+            source += "BYTE $" + hex8(opcode) + "          ; " + hex8(opcode) + "          ; " + hex16(index - 1) + "\n";
             continue;
         }
 
@@ -67,9 +67,9 @@ std::string disassemble (const std::vector<uint8_t>& bytes) {
         }();
 
         if (index + requiredBytes > bytes.size()) {
-            source += "BYTE $" + hex8(opcode) + "          ; " + hex8(opcode) + "\n";
+            source += "BYTE $" + hex8(opcode) + "          ; " + hex8(opcode) + "          ; " + hex16(index - 1) + "\n";
             while (index < bytes.size()) {
-                source += "BYTE $" + hex8(bytes[index]) + "          ; " + hex8(bytes[index]) + "\n";
+                source += "BYTE $" + hex8(bytes[index]) + "          ; " + hex8(bytes[index]) + "          ; " + hex16(index - 1) + "\n";
                 index++;
             }
             break;
@@ -80,65 +80,78 @@ std::string disassemble (const std::vector<uint8_t>& bytes) {
         switch (mode) {
             case AddressingMode::Absolute:
                 source += " $" + hex16((bytes[index + 1] << 8) | bytes[index]) +
-                    "         ; " + hex8(opcode) + " " + hex8(bytes[index]) + " " + hex8(bytes[index + 1]);
+                    "         ; " + hex8(opcode) + " " + hex8(bytes[index]) + " " + hex8(bytes[index + 1]) +
+                    "    ; " + hex16(index - 1);
                 break;
 
             case AddressingMode::AbsoluteX:
                 source += " $" + hex16((bytes[index + 1] << 8) | bytes[index]) + ", X" +
-                    "      ; " + hex8(opcode) + " " + hex8(bytes[index]) + " " + hex8(bytes[index + 1]);
+                    "      ; " + hex8(opcode) + " " + hex8(bytes[index]) + " " + hex8(bytes[index + 1]) +
+                    "    ; " + hex16(index - 1);
                 break;
 
             case AddressingMode::AbsoluteY:
                 source += " $" + hex16((bytes[index + 1] << 8) | bytes[index]) + ", Y" +
-                    "      ; " + hex8(opcode) + " " + hex8(bytes[index]) + " " + hex8(bytes[index + 1]);
+                    "      ; " + hex8(opcode) + " " + hex8(bytes[index]) + " " + hex8(bytes[index + 1]) +
+                    "    ; " + hex16(index - 1);
                 break;
 
             case AddressingMode::Accumulator:
-                source += " A             ; " + hex8(opcode);
+                source += " A             ; " + hex8(opcode) +
+                    "          ; " + hex16(index - 1);
                 break;
 
             case AddressingMode::Immediate:
                 source += " #$" + hex8(bytes[index]) +
-                    "          ; " + hex8(opcode) + " " + hex8(bytes[index]) + " " + hex8(bytes[index + 1]);
+                    "          ; " + hex8(opcode) + " " + hex8(bytes[index]) +
+                    "       ; " + hex16(index - 1);
                 break;
 
             case AddressingMode::Implied:
-                source += "               ; " + hex8(opcode);
+                source += "               ; " + hex8(opcode) +
+                    "          ; " + hex16(index - 1);
                 break;
 
             case AddressingMode::Indirect:
                 source += " ($" + hex16((bytes[index + 1] << 8) | bytes[index]) + ")" +
-                    "       ; " + hex8(opcode) + " " + hex8(bytes[index]) + " " + hex8(bytes[index + 1]);
+                    "       ; " + hex8(opcode) + " " + hex8(bytes[index]) + " " + hex8(bytes[index + 1]) +
+                    "    ; " + hex16(index - 1);
                 break;
 
             case AddressingMode::IndirectX:
                 source += " ($" + hex8(bytes[index]) + ", X)" +
-                    "      ; " + hex8(opcode) + " " + hex8(bytes[index]);
+                    "      ; " + hex8(opcode) + " " + hex8(bytes[index]) +
+                    "       ; " + hex16(index - 1);
                 break;
 
             case AddressingMode::IndirectY:
                 source += " ($" + hex8(bytes[index]) + "), Y" +
-                    "      ; " + hex8(opcode) + " " + hex8(bytes[index]);
+                    "      ; " + hex8(opcode) + " " + hex8(bytes[index]) +
+                    "       ; " + hex16(index - 1);
                 break;
 
             case AddressingMode::Relative:
                 source += " *" + std::to_string(static_cast<int8_t>(bytes[index])) +
-                    "           ; " + hex8(opcode) + " " + hex8(bytes[index]);
+                    "           ; " + hex8(opcode) + " " + hex8(bytes[index]) +
+                    "       ; " + hex16(index - 1);
                 break;
 
             case AddressingMode::ZeroPage:
                 source += " $" + hex8(bytes[index]) +
-                    "           ; " + hex8(opcode) + " " + hex8(bytes[index]);
+                    "           ; " + hex8(opcode) + " " + hex8(bytes[index]) +
+                    "       ; " + hex16(index - 1);
                 break;
 
             case AddressingMode::ZeroPageX:
                 source += " $" + hex8(bytes[index]) + ", X" +
-                    "        ; " + hex8(opcode) + " " + hex8(bytes[index]);
+                    "        ; " + hex8(opcode) + " " + hex8(bytes[index]) +
+                    "       ; " + hex16(index - 1);
                 break;
 
             case AddressingMode::ZeroPageY:
                 source += " $" + hex8(bytes[index]) + ", Y" +
-                    "        ; " + hex8(opcode) + " " + hex8(bytes[index]);
+                    "        ; " + hex8(opcode) + " " + hex8(bytes[index]) +
+                    "       ; " + hex16(index - 1);
                 break;
         }
 
