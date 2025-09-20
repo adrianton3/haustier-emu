@@ -123,29 +123,29 @@ std::variant<std::vector<uint8_t>, ParserError> assemble (const std::vector<Toke
                 }
 
                 if (std::in_range<uint8_t>(value)) {
-                    // zero-page
                     const InsAndMode insAndMode { name, AddressingMode::ZeroPage };
 
-                    if (!opcodes.contains(insAndMode)) {
-                        return ParserError { name + " is not available with zero-page addressing", lineIndex };
+                    if (opcodes.contains(insAndMode)) {
+                        bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
+                        index += 2;
+                        continue;
                     }
+                }
 
-                    bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
-                } else if (std::in_range<uint16_t>(value)) {
-                    // absolute
+                if (std::in_range<uint16_t>(value)) {
                     const InsAndMode insAndMode { name, AddressingMode::Absolute };
 
                     if (!opcodes.contains(insAndMode)) {
-                        return ParserError { name + " is not available with absolute addressing", lineIndex };
+                        return ParserError { name + " is not available with zero-page or absolute addressing", lineIndex };
                     }
 
                     bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value), getByte<1>(value) });
-                } else {
-                    return ParserError { std::to_string(value) + " does not fit in a word", lineIndex };
+
+                    index += 2;
+                    continue;
                 }
 
-                index += 2;
-                continue;
+                return ParserError { std::to_string(value) + " does not fit in a word", lineIndex };
             }
 
             if (matches<TokenType::Identifier, TokenType::NewLine>(tokens, index)) {
@@ -222,29 +222,29 @@ std::variant<std::vector<uint8_t>, ParserError> assemble (const std::vector<Toke
                 const auto value = getNumberValue(tokens[index]);
 
                 if (std::in_range<uint8_t>(value)) {
-                    // zero-page
                     const InsAndMode insAndMode { name, xy == "X" ? AddressingMode::ZeroPageX : AddressingMode::ZeroPageY };
 
-                    if (!opcodes.contains(insAndMode)) {
-                        return ParserError { name + " is not available with zero-page addressing", lineIndex };
+                    if (opcodes.contains(insAndMode)) {
+                        bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
+                        index += 4;
+                        continue;
                     }
+                }
 
-                    bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value) });
-                } else if (std::in_range<uint16_t>(value)) {
-                    // absolute
+                if (std::in_range<uint16_t>(value)) {
                     const InsAndMode insAndMode { name, xy == "X" ? AddressingMode::AbsoluteX : AddressingMode::AbsoluteY };
 
                     if (!opcodes.contains(insAndMode)) {
-                        return ParserError { name + " is not available with absolute addressing", lineIndex };
+                        return ParserError { name + " is not available with zero-page-x/z or absolute-x/z addressing", lineIndex };
                     }
 
                     bytes.insert(bytes.end(), { opcodes[insAndMode], getByte<0>(value), getByte<1>(value) });
-                } else {
-                    return ParserError { std::to_string(value) + " does not fit in a word", lineIndex };
+
+                    index += 4;
+                    continue;
                 }
 
-                index += 4;
-                continue;
+                return ParserError { std::to_string(value) + " does not fit in a word", lineIndex };
             }
 
             if (matches<TokenType::ParOpen, TokenType::Number, TokenType::ParClosed, TokenType::NewLine>(tokens, index)) {
