@@ -67,7 +67,7 @@ std::string disassemble (const std::vector<uint8_t>& bytes) {
         }();
 
         if (index + requiredBytes > bytes.size()) {
-            source += "BYTE $" + hex8(opcode) + "          ; " + hex8(bytes[index]) + "\n";
+            source += "BYTE $" + hex8(opcode) + "          ; " + hex8(opcode) + "\n";
             while (index < bytes.size()) {
                 source += "BYTE $" + hex8(bytes[index]) + "          ; " + hex8(bytes[index]) + "\n";
                 index++;
@@ -79,17 +79,17 @@ std::string disassemble (const std::vector<uint8_t>& bytes) {
 
         switch (mode) {
             case AddressingMode::Absolute:
-                source += " $" + hex16((bytes[index] << 8) | bytes[index + 1]) +
+                source += " $" + hex16((bytes[index + 1] << 8) | bytes[index]) +
                     "         ; " + hex8(opcode) + " " + hex8(bytes[index]) + " " + hex8(bytes[index + 1]);
                 break;
 
             case AddressingMode::AbsoluteX:
-                source += " $" + hex16((bytes[index] << 8) | bytes[index + 1]) + ", X" +
-                    "    ; " + hex8(opcode) + " " + hex8(bytes[index]) + " " + hex8(bytes[index + 1]);
+                source += " $" + hex16((bytes[index + 1] << 8) | bytes[index]) + ", X" +
+                    "      ; " + hex8(opcode) + " " + hex8(bytes[index]) + " " + hex8(bytes[index + 1]);
                 break;
 
             case AddressingMode::AbsoluteY:
-                source += " $" + hex16((bytes[index] << 8) | bytes[index + 1]) + ", Y" +
+                source += " $" + hex16((bytes[index + 1] << 8) | bytes[index]) + ", Y" +
                     "      ; " + hex8(opcode) + " " + hex8(bytes[index]) + " " + hex8(bytes[index + 1]);
                 break;
 
@@ -98,7 +98,7 @@ std::string disassemble (const std::vector<uint8_t>& bytes) {
                 break;
 
             case AddressingMode::Immediate:
-                source += " #$" + hex8((bytes[index] << 8) | bytes[index + 1]) +
+                source += " #$" + hex8(bytes[index]) +
                     "          ; " + hex8(opcode) + " " + hex8(bytes[index]) + " " + hex8(bytes[index + 1]);
                 break;
 
@@ -107,13 +107,13 @@ std::string disassemble (const std::vector<uint8_t>& bytes) {
                 break;
 
             case AddressingMode::Indirect:
-                source += " ($" + hex16((bytes[index] << 8) | bytes[index + 1]) + ")" +
+                source += " ($" + hex16((bytes[index + 1] << 8) | bytes[index]) + ")" +
                     "       ; " + hex8(opcode) + " " + hex8(bytes[index]) + " " + hex8(bytes[index + 1]);
                 break;
 
             case AddressingMode::IndirectX:
                 source += " ($" + hex8(bytes[index]) + ", X)" +
-                    "    ; " + hex8(opcode) + " " + hex8(bytes[index]);
+                    "      ; " + hex8(opcode) + " " + hex8(bytes[index]);
                 break;
 
             case AddressingMode::IndirectY:
