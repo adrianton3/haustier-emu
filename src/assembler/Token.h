@@ -13,6 +13,7 @@ enum class TokenType : uint8_t {
     ParOpen,
     ParClosed,
     Comma,
+    Star,
     NewLine,
 };
 
@@ -23,6 +24,7 @@ struct Hash {};
 struct ParOpen {};
 struct ParClosed {};
 struct Comma {};
+struct Star {};
 struct NewLine {};
 
 typedef std::variant<
@@ -33,6 +35,7 @@ typedef std::variant<
     ParOpen,
     ParClosed,
     Comma,
+    Star,
     NewLine
 > Token;
 

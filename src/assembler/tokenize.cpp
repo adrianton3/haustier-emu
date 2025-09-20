@@ -13,7 +13,11 @@ bool isIdentifierTailChar (char ch) {
     return (ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z') || (ch >= 'a' && ch <= 'z') || ch == '_';
 }
 
-bool isNumberDecChar (char ch) {
+bool isNumberDecHeadChar (char ch) {
+    return ch == '-' || (ch >= '0' && ch <= '9');
+}
+
+bool isNumberDecTailChar (char ch) {
     return ch >= '0' && ch <= '9';
 }
 
@@ -91,6 +95,16 @@ std::variant<ChopResult, ParserError> chopNumberHex (const std::string& source, 
 }
 
 std::variant<ChopResult, ParserError> chopNumberDec (const std::string& source, int indexStart, int lineIndex) {
+    bool negative = false;
+    if (source[indexStart] == '-') {
+        negative = true;
+        indexStart++;
+
+        if (indexStart >= source.size() || !isNumberDecTailChar(source[indexStart])) {
+            return ParserError { "expected a dec number after '-'", lineIndex };
+        }
+    }
+
     auto index = indexStart;
 
     while (true) {
@@ -100,7 +114,7 @@ std::variant<ChopResult, ParserError> chopNumberDec (const std::string& source, 
 
             if (const auto* value = std::get_if<int64_t>(&result)) {
                 return ChopResult {
-                    Number { *value },
+                    Number { negative ? -*value : *value },
                     index
                 };
             }
@@ -108,7 +122,7 @@ std::variant<ChopResult, ParserError> chopNumberDec (const std::string& source, 
             return ParserError { std::get<std::string>(result), lineIndex };
         }
 
-        if (!isNumberDecChar(source[index])) {
+        if (!isNumberDecTailChar(source[index])) {
             return ParserError { std::string { "unexpected '" } + source[index] + '\'', lineIndex };
         }
 
@@ -140,7 +154,7 @@ std::variant<std::vector<Token>, ParserError> tokenize (const std::string& sourc
             index = nameAndIndex.index;
         }
 
-        if (isNumberDecChar(source[index])) {
+        if (isNumberDecHeadChar(source[index])) {
             const auto result = chopNumberDec(source, index, lineIndex);
             if (const auto* valueAndIndex = std::get_if<ChopResult>(&result)) {
                 tokens.emplace_back(valueAndIndex->token);
@@ -186,6 +200,12 @@ std::variant<std::vector<Token>, ParserError> tokenize (const std::string& sourc
 
         if (source[index] == ',') {
             tokens.emplace_back(Comma {});
+            index++;
+            continue;
+        }
+
+        if (source[index] == '*') {
+            tokens.emplace_back(Star {});
             index++;
             continue;
         }

@@ -174,6 +174,25 @@ std::variant<std::vector<uint8_t>, ParserError> assemble (const std::vector<Toke
                 continue;
             }
 
+            if (matches<TokenType::Star, TokenType::Number, TokenType::NewLine>(tokens, index)) {
+                // relative
+                const InsAndMode insAndMode { name, AddressingMode::Relative };
+
+                if (!opcodes.contains(insAndMode)) {
+                    return ParserError { name + " is not available with relative addressing", lineIndex };
+                }
+
+                const auto offset = getNumberValue(tokens[index + 1]);
+                if (!std::in_range<int8_t>(offset)) {
+                    return ParserError { "jump target is too far from jump instruction", lineIndex };
+                }
+
+                bytes.insert(bytes.end(), { opcodes[insAndMode], static_cast<uint8_t>(offset) });
+
+                index += 3;
+                continue;
+            }
+
             if (matches<TokenType::Hash, TokenType::Number, TokenType::NewLine>(tokens, index)) {
                 // immediate
                 const InsAndMode insAndMode { name, AddressingMode::Immediate };
